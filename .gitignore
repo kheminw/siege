@@ -34,3 +34,5 @@ utils/siege2csv.pl
 
 # Others
 tags
+.gdb_history
+peda-session-*

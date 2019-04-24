@@ -210,12 +210,82 @@ url_set_method(URL this, METHOD method) {
 }
 
 /**
+ * add random strings to specified regions in the post body
+ * Note: specified regions are surrounded with a '`' and a '^'
+ * `abcdef^ = adsfjlaf
+ */
+
+private int *
+__get_random_string_regions(int *result_size, char *datap) {
+  int *indices_sets = malloc(2 * sizeof(int));
+  int index = 0;
+  for (int i = 0; i < strlen(datap); i++) {
+    if (*(datap + i) == '`') {
+      for (int j = i+1; j < strlen(datap); j++) {
+        if (*(datap + j) == '^') {
+          printf("Offset: %d %d\n", i, j);
+          indices_sets[index] = i;
+          indices_sets[index + 1] = j;
+          indices_sets = realloc(indices_sets, sizeof(indices_sets) + 2);
+          index += 2;
+          break;
+        }
+      } 
+    }
+  }
+  printf("Regions to modify: ");
+  for (int i = 0; i < index; i++) {
+    printf("%d ", indices_sets[i]);
+  }
+  printf("\n");
+  *result_size = index;
+  return indices_sets;
+}
+
+private int 
+__int_n(int n) { return rand() % n; }
+
+private char * 
+__rand_str(size_t length) {
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz0123456789";
+    char *rstr = malloc((length + 1) * sizeof(char));
+    int i;
+    for (i = 0; i < length; i++) {
+      printf("i: %d", i);
+      rstr[i] = alphabet[__int_n(strlen(alphabet))];
+    }
+    rstr[length] = '\0';
+    return rstr;
+}
+
+private void
+__add_random_strings(char *datap) {
+  int *indices_size = malloc(sizeof(int));
+  int *indices_sets = __get_random_string_regions(indices_size, datap);
+  printf("Num of Indices: %d\n", *indices_size);
+  for (int i = 0; i < *indices_size; i+=2) {
+    int current_offsets[2];
+    current_offsets[0] = indices_sets[i];
+    current_offsets[1] = indices_sets[i + 1];
+    int randstr_size = current_offsets[1] - current_offsets[0] + 1;
+    char *temp;
+    temp = __rand_str(randstr_size);
+    for (int j = current_offsets[0]; j < current_offsets[1] + 1; j++) {
+      *(datap + j) = temp[j - current_offsets[0]];
+    }
+  }
+}
+
+/**
  * invoked when post data is read from a file.
  * see load.c 
  */
 void
 url_set_postdata(URL this, char *postdata, size_t postlen)
 {
+  if (my.random_string) {
+      __add_random_strings(postdata);
+  }
   this->postlen   = postlen;
   this->postdata = xmalloc(this->postlen+1);
   memcpy(this->postdata, postdata, this->postlen);
@@ -650,6 +720,9 @@ __parse_post_data(URL this, char *datap)
     datap = __url_set_file(this, datap);
     return;
   } else {
+    if (my.random_string) {
+      __add_random_strings(datap);
+    }
     this->postdata = xstrdup(datap);
     this->postlen  = strlen(this->postdata);
     if (! empty(my.conttype)) {

@@ -83,6 +83,7 @@ static struct option long_options[] =
   { "header",       required_argument, NULL, 'H' },
   { "user-agent",   required_argument, NULL, 'A' },
   { "content-type", required_argument, NULL, 'T' },
+  { "random-string",   no_argument,    NULL, 's' },
   {0, 0, 0, 0} 
 };
 
@@ -159,6 +160,7 @@ display_help()
   puts("  -T, --content-type=\"text\" Sets Content-Type in request" ); 
   puts("      --no-parser           NO PARSER, turn off the HTML page parser");
   puts("      --no-follow           NO FOLLOW, do not follow HTTP redirects");
+  puts("  -s, --random-strings      Add random strings to specified regions");
   puts("");
   puts(copyright);
   /**
@@ -179,7 +181,7 @@ parse_rc_cmdline(int argc, char *argv[])
   strcpy(my.rc, "");
   
   while( a > -1 ){
-    a = getopt_long(argc, argv, "VhvqCDNFpgl::ibr:t:f:d:c:m:H:R:A:T:", long_options, (int*)0);
+    a = getopt_long(argc, argv, "VhvqCDNFpgl::ibr:t:f:d:c:m:H:R:A:T:s", long_options, (int*)0);
     if(a == 'R'){
       strcpy(my.rc, optarg);
       a = -1;
@@ -198,7 +200,7 @@ parse_cmdline(int argc, char *argv[])
 {
   int c = 0;
   int nargs;
-  while ((c = getopt_long(argc, argv, "VhvqCDNFpgl::ibr:t:f:d:c:m:H:R:A:T:", long_options, (int *)0)) != EOF) {
+  while ((c = getopt_long(argc, argv, "VhvqCDNFpgl::ibr:t:f:d:c:m:H:R:A:T:s", long_options, (int *)0)) != EOF) {
   switch (c) {
       case 'V':
         display_version(TRUE);
@@ -296,7 +298,11 @@ parse_cmdline(int argc, char *argv[])
           strcat(my.extra,"\015\012");
         }
         break; 
-
+      case 's':
+        {
+          my.random_string = TRUE;
+          NOTIFY(WARNING, "Being implemented");
+        }
     } /* end of switch( c )           */
   }   /* end of while c = getopt_long */
   nargs = argc - optind;
@@ -410,6 +416,8 @@ main(int argc, char *argv[])
 #ifdef HAVE_SSL
   SSL_thread_setup();
 #endif
+
+  srand(time(NULL));
 
   if (my.url != NULL) {
     URL tmp = new_url(my.url);
