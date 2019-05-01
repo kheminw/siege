@@ -301,7 +301,7 @@ parse_cmdline(int argc, char *argv[])
       case 's':
         {
           my.random_string = TRUE;
-          NOTIFY(WARNING, "Being implemented");
+          NOTIFY(WARNING, "Experimental");
         }
     } /* end of switch( c )           */
   }   /* end of while c = getopt_long */
@@ -417,7 +417,7 @@ main(int argc, char *argv[])
   SSL_thread_setup();
 #endif
 
-  srand(time(NULL));
+  srand(time(NULL)); // for random string generation
 
   if (my.url != NULL) {
     URL tmp = new_url(my.url);

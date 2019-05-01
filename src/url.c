@@ -42,27 +42,27 @@
 
 struct URL_T
 {
-  int       ID;
-  char *    url;
-  SCHEME    scheme;
-  METHOD    method;
-  char *    username;
-  char *    password;
-  char *    hostname;
-  int       port;
-  char *    path;
-  char *    file;
-  char *    params;
-  BOOLEAN   hasparams;
-  char *    query;
-  char *    frag;
-  char *    request;
-  size_t    postlen;
-  char *    postdata;
-  char *    posttemp;
-  char *    conttype;
-  BOOLEAN   cached;
-  BOOLEAN   redir;
+  int       ID; 
+  char *    url; 
+  SCHEME    scheme; 
+  METHOD    method; 
+  char *    username; 
+  char *    password; 
+  char *    hostname; 
+  int       port; 
+  char *    path; 
+  char *    file; 
+  char *    params; 
+  BOOLEAN   hasparams; 
+  char *    query; 
+  char *    frag; 
+  char *    request; 
+  size_t    postlen; 
+  char *    postdata; 
+  char *    posttemp; 
+  char *    conttype; 
+  BOOLEAN   cached; 
+  BOOLEAN   redir; 
 };
 
 size_t URLSIZE = sizeof(struct URL_T);
@@ -217,27 +217,27 @@ url_set_method(URL this, METHOD method) {
 
 private int *
 __get_random_string_regions(int *result_size, char *datap) {
-  int *indices_sets = malloc(2 * sizeof(int));
+  int *indices_sets = xmalloc(2 * sizeof(int));
   int index = 0;
-  for (int i = 0; i < strlen(datap); i++) {
+  for (unsigned int i = 0; i < strlen(datap); i++) {
     if (*(datap + i) == '`') {
-      for (int j = i+1; j < strlen(datap); j++) {
+      for (unsigned int j = i+1; j < strlen(datap); j++) {
         if (*(datap + j) == '^') {
-          printf("Offset: %d %d\n", i, j);
+          // printf("Offset: %d %d\n", i, j);
           indices_sets[index] = i;
           indices_sets[index + 1] = j;
-          indices_sets = realloc(indices_sets, sizeof(indices_sets) + 2);
+          indices_sets = xrealloc(indices_sets, sizeof(indices_sets) + 2);
           index += 2;
           break;
         }
       } 
     }
   }
-  printf("Regions to modify: ");
-  for (int i = 0; i < index; i++) {
-    printf("%d ", indices_sets[i]);
-  }
-  printf("\n");
+  // printf("Regions to modify: ");
+  // for (int i = 0; i < index; i++) {
+  //   printf("%d ", indices_sets[i]);
+  // }
+  // printf("\n");
   *result_size = index;
   return indices_sets;
 }
@@ -248,21 +248,21 @@ __int_n(int n) { return rand() % n; }
 private char * 
 __rand_str(size_t length) {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz0123456789";
-    char *rstr = malloc((length + 1) * sizeof(char));
-    int i;
-    for (i = 0; i < length; i++) {
-      printf("i: %d", i);
+    char *rstr = xmalloc((length + 1) * sizeof(char));
+    for (unsigned int i = 0; i < length; i++) {
+      // printf("i: %d", i);
       rstr[i] = alphabet[__int_n(strlen(alphabet))];
     }
     rstr[length] = '\0';
     return rstr;
 }
 
-private void
-__add_random_strings(char *datap) {
-  int *indices_size = malloc(sizeof(int));
+void
+url_add_random_strings(URL this) {
+  char *datap = this->postdata;
+  int *indices_size = xmalloc(sizeof(int));
   int *indices_sets = __get_random_string_regions(indices_size, datap);
-  printf("Num of Indices: %d\n", *indices_size);
+  // printf("Num of Indices: %d\n", *indices_size);
   for (int i = 0; i < *indices_size; i+=2) {
     int current_offsets[2];
     current_offsets[0] = indices_sets[i];
@@ -283,9 +283,6 @@ __add_random_strings(char *datap) {
 void
 url_set_postdata(URL this, char *postdata, size_t postlen)
 {
-  if (my.random_string) {
-      __add_random_strings(postdata);
-  }
   this->postlen   = postlen;
   this->postdata = xmalloc(this->postlen+1);
   memcpy(this->postdata, postdata, this->postlen);
@@ -492,7 +489,7 @@ void
 url_dump(URL this) 
 {
   printf("URL ID:    %d\n", this->ID);
-  printf("Abolute:   %s\n", this->url);
+  printf("Absolute:  %s\n", this->url);
   printf("Scheme:    %s\n", url_get_scheme_name(this));
   printf("Method:    %s\n", url_get_method_name(this));
   printf("Username:  %s\n", url_get_username(this));
@@ -720,9 +717,6 @@ __parse_post_data(URL this, char *datap)
     datap = __url_set_file(this, datap);
     return;
   } else {
-    if (my.random_string) {
-      __add_random_strings(datap);
-    }
     this->postdata = xstrdup(datap);
     this->postlen  = strlen(this->postdata);
     if (! empty(my.conttype)) {
@@ -1385,4 +1379,74 @@ __url_replace(char *url, const char *needle, const char *replacement)
     memset(url, '\0', strlen(url));
   }
   strncpy(url, buf, strlen(buf));
+}
+
+void
+url_deep_copy(URL dest, URL source) {
+  dest->ID = 0;
+  url_set_ID(dest, url_get_ID(source));
+  dest->hasparams = source->hasparams;
+  dest->params = NULL;
+  if(source->params != NULL) {
+    __url_set_parameters(dest, source->params);
+  }
+  url_set_redirect(dest, source->redir);
+  dest->url = NULL;
+  if(source->url != NULL) {
+    dest->url = xmalloc((strlen(source->url) + 1) * sizeof(char));
+    strncpy(dest->url, source->url, strlen(source->url) + 1);
+  }
+  dest->scheme = 0;
+  if(url_get_scheme(source) != 0) {
+    url_set_scheme(dest, url_get_scheme(source));
+  }
+  dest->method = 0;
+  if(url_get_method(source) != 0) {
+    url_set_method(dest, url_get_method(source));
+  }
+  dest->username = NULL;
+  dest->password = NULL;
+  if(url_get_username(source) != NULL && url_get_password(source) != NULL) {
+    url_set_username(dest, url_get_username(source));
+    url_set_password(dest, url_get_password(source));  
+  }
+  dest->hostname = NULL;
+  if(url_get_hostname(source) != NULL) {
+    url_set_hostname(dest, url_get_hostname(source));
+  }
+  // Getter: Int, Setter: String 
+  char port_temp[100];
+  sprintf(port_temp, "%d", url_get_port(source));
+  __url_set_port(dest, port_temp);
+  dest->path = NULL;
+  dest->request = NULL;
+  if(url_get_path(source) != NULL) {
+    __url_set_path(dest, url_get_path(source));
+  }
+  dest->file = NULL;
+  if(url_get_file(source) != NULL) {
+    __url_set_file(dest, url_get_file(source));
+  }
+  dest->query = NULL;
+  if(url_get_query(source) != NULL) {
+    __url_set_query(dest, url_get_query(source));
+  }
+  dest->frag = NULL;
+  if(url_get_fragment(source) != NULL) {
+    __url_set_fragment(dest, url_get_fragment(source));
+  }
+  dest->postlen = 0;
+  dest->postdata = NULL;
+  if(url_get_postdata(source) != NULL) {
+    url_set_postdata(dest, url_get_postdata(source), url_get_postlen(source));
+    url_set_conttype(dest, url_get_conttype(source));
+  }
+  dest->posttemp = NULL;
+  if(source->posttemp != NULL) {
+    dest->posttemp = xmalloc((strlen(source->posttemp) + 1) * sizeof(char));
+    strncpy(dest->posttemp, source->posttemp, strlen(source->posttemp) + 1);
+  }
+  dest->cached = source->cached;
+  // url_dump(dest);
+  return;
 }

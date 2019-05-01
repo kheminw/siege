@@ -75,6 +75,7 @@ void     url_set_scheme(URL this, SCHEME scheme);
 void     url_set_hostname(URL this, char *hostname);
 void     url_set_redirect(URL this, BOOLEAN redir);
 void     url_set_conttype(URL this, char *type);
+void     url_add_random_strings(URL this);
 void     url_set_postdata(URL this, char *postdata, size_t postlen);
 void     url_set_method(URL this, METHOD method);
 
@@ -143,5 +144,7 @@ void     url_set_password(URL this, char *password);
 URL      url_normalize(URL req, char *location);
 char *   url_normalize_string(URL req, char *location);
 
+// Deep copy for random string generation
+void     url_deep_copy(URL dest, URL source);
 
 #endif/*__URL_H*/

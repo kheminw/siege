@@ -289,7 +289,15 @@ start(BROWSER this)
      * or urls.txt file. If it is text/html then it will
      * be parsed in __http request function.
      */
-    URL tmp = array_get(this->urls, y);
+    URL tmp = xmalloc(URLSIZE);
+    if (my.random_string) {
+      URL tmp2 = array_get(this->urls, y);
+      url_deep_copy(tmp, tmp2);
+      url_add_random_strings(tmp);
+      // printf("Post Data: %s\n", url_get_postdata(tmp));
+    } else {
+      tmp = array_get(this->urls, y);
+    }
     if (tmp != NULL && url_get_hostname(tmp) != NULL) {
       this->auth.bids.www = 0; /* reset */
       if ((ret = __request(this, tmp))==FALSE) {
